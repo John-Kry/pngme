@@ -1,9 +1,8 @@
 use std::fmt::{Display, Formatter};
-use std::str::{FromStr, Utf8Error};
-use std::string::FromUtf8Error;
+use std::str::{FromStr};
 use crate::Error;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub(crate) struct ChunkType {
     code: [u8;4]
 }
