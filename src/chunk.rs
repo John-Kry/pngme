@@ -6,7 +6,7 @@ use crate::chunk_type::ChunkType;
 use crate::Error;
 use crate::Result;
 
-struct Chunk{
+pub(crate) struct Chunk{
     length : u32,
     chunk_type: ChunkType,
     data: Vec<u8>,
@@ -25,7 +25,7 @@ impl Display for Chunk {
 }
 
 impl Chunk {
-    fn new(chunk_type: ChunkType, data:Vec<u8>)->Self{
+    pub(crate) fn new(chunk_type: ChunkType, data:Vec<u8>) ->Self{
        Self{
            length: data.len() as u32,
            chunk_type,
@@ -55,6 +55,10 @@ impl Chunk {
 
     fn data_as_string(&self)->Result<String>{
         Ok(String::from_utf8(self.data.to_vec())?)
+    }
+
+    pub fn as_bytes(&self)->Vec<u8>{
+       return self.data().to_vec();
     }
 }
 impl TryFrom<&[u8]> for Chunk{
