@@ -1,5 +1,4 @@
 use std::fmt::{Display, Formatter};
-use std::io::{ErrorKind, Read};
 use std::str::FromStr;
 use crc::{Crc, CRC_32_ISO_HDLC};
 use crate::chunk_type::ChunkType;
@@ -49,11 +48,11 @@ impl Chunk {
         CRC_PNG.checksum(&msg)
     }
 
-    fn chunk_type(&self)->ChunkType{
+    pub fn chunk_type(&self)->ChunkType{
         self.chunk_type
     }
 
-    fn data_as_string(&self)->Result<String>{
+    pub fn data_as_string(&self)->Result<String>{
         Ok(String::from_utf8(self.data.to_vec())?)
     }
 
@@ -70,7 +69,6 @@ impl TryFrom<&[u8]> for Chunk{
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Self> {
-        type Error = crate::Error;
 
         let length = u32::from_be_bytes(bytes[0..=3].try_into()?);
         let chunk_type = ChunkType::try_from(

@@ -1,5 +1,8 @@
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 use crate::chunk::Chunk;
 use crate::{Error, Result};
+use crate::chunk_type::ChunkType;
 
 struct Png{
     chunks: Vec<Chunk>
@@ -13,6 +16,24 @@ impl Png{
     }
     pub fn chunks(&self) -> &[Chunk] {
        &self.chunks
+    }
+    pub fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
+        let search_for = ChunkType::from_str(chunk_type).ok()?;
+        self.chunks.iter().find(|c|c.chunk_type() == search_for)
+    }
+
+    pub fn append_chunk(&mut self, chunk: Chunk) {
+        self.chunks.push(chunk);
+    }
+    pub fn remove_chunk(&mut self, chunk_type: &str) -> Result<Chunk> {
+        let search_for = ChunkType::from_str(chunk_type)?;
+        let pos = self.chunks.iter().position(|c|c.chunk_type() == search_for).ok_or("Failed to find item")?;
+        Ok(self.chunks.remove(pos))
+    }
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let bytes:Vec<u8> = self.chunks.iter().flat_map(|c|c.as_bytes()).collect();
+        let res = Png::STANDARD_HEADER.to_vec();
+        return [res,bytes].concat()
     }
 }
 
@@ -29,7 +50,7 @@ impl TryFrom<&[u8]> for Png{
         let mut chunks:Vec<Chunk> = Vec::new();
         while pos <bytes.len(){
             let c = Chunk::try_from(&bytes[pos..])?;
-            pos += (12 + c.length() as usize);
+            pos += 12 + c.length() as usize;
             chunks.push(c);
         }
         return Ok(Self{
@@ -38,13 +59,25 @@ impl TryFrom<&[u8]> for Png{
     }
 }
 
+impl Display for Png{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for x in &self.chunks {
+            // Exit early if we can't write anything
+             match f.write_str(x.chunk_type().to_string().to_owned().as_str()) {
+                 Ok(_) => {}
+                 Err(e) => {return Err(e);}
+             }
+        }
+        return Ok(());
+        
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::chunk_type::ChunkType;
     use crate::chunk::Chunk;
-    use std::str::FromStr;
-    use std::convert::TryFrom;
 
     fn testing_chunks() -> Vec<Chunk> {
         let mut chunks = Vec::new();
@@ -56,14 +89,12 @@ mod tests {
         chunks
     }
 
-    // fn testing_png() -> Png {
-    //     let chunks = testing_chunks();
-    //     Png::from_chunks(chunks)
-    // }
+    fn testing_png() -> Png {
+        let chunks = testing_chunks();
+        Png::from_chunks(chunks)
+    }
 
     fn chunk_from_strings(chunk_type: &str, data: &str) -> Result<Chunk> {
-        use std::str::FromStr;
-
         let chunk_type = ChunkType::from_str(chunk_type)?;
         let data: Vec<u8> = data.bytes().collect();
 
@@ -114,7 +145,6 @@ mod tests {
         assert!(png.is_err());
     }
 
-    /*
     #[test]
     fn test_invalid_chunk() {
         let mut chunk_bytes: Vec<u8> = testing_chunks()
@@ -450,6 +480,4 @@ mod tests {
         202, 28, 31, 66, 176, 235, 16, 0, 0, 0, 3, 82, 117, 83, 116, 104, 101, 121, 158, 176, 245,
         160, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
     ];
-
-     */
 }
