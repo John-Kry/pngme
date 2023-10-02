@@ -1,5 +1,5 @@
 use std::fmt::{Display, Formatter};
-use std::io::ErrorKind;
+use std::io::{ErrorKind, Read};
 use std::str::FromStr;
 use crc::{Crc, CRC_32_ISO_HDLC};
 use crate::chunk_type::ChunkType;
@@ -33,7 +33,7 @@ impl Chunk {
        }
     }
 
-    fn length(&self)->u32{
+    pub(crate) fn length(&self) ->u32{
         return self.length;
     }
 
@@ -58,7 +58,12 @@ impl Chunk {
     }
 
     pub fn as_bytes(&self)->Vec<u8>{
-       return self.data().to_vec();
+        [
+            self.length.to_be_bytes().as_ref(),
+            &self.chunk_type.bytes(),
+            &self.data,
+            self.crc().to_be_bytes().as_ref()
+        ].concat()
     }
 }
 impl TryFrom<&[u8]> for Chunk{
@@ -67,7 +72,7 @@ impl TryFrom<&[u8]> for Chunk{
     fn try_from(bytes: &[u8]) -> Result<Self> {
         type Error = crate::Error;
 
-        let length = u32::from_be_bytes(bytes[0..=3].to_vec().try_into().unwrap());
+        let length = u32::from_be_bytes(bytes[0..=3].try_into()?);
         let chunk_type = ChunkType::try_from(
             <[u8; 4]>::try_from(bytes[4..=7].to_vec()).unwrap()
             )?;

@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::str::{FromStr};
 use crate::Error;
+use crate::{Result};
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub(crate) struct ChunkType {
@@ -47,23 +48,23 @@ impl ChunkType {
 impl TryFrom<[u8;4]> for ChunkType{
     type Error = Error;
 
-    fn try_from(value: [u8; 4]) -> Result<Self, Self::Error> {
+    fn try_from(value: [u8; 4]) -> Result<Self> {
        return Ok(Self { code: value });
     }
 
 }
 
 impl FromStr for ChunkType{
-    type Err = ();
+    type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self> {
         return if s.len() != 4 {
-            Err(())
+            Err("You don messed up".into())
         } else {
             let res = Self { code: <[u8; 4]>::try_from(s.as_bytes()).unwrap() };
             for key in res.code {
                 if !key.is_ascii_alphabetic() {
-                    return Err(());
+                    return Err("Non alphabetic usages".into());
                 }
             }
             Ok(res)

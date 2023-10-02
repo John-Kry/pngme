@@ -25,15 +25,15 @@ impl TryFrom<&[u8]> for Png{
                 return Err("Standard Header Wrong".into());
             }
         }
-        let parseable:Vec<u8> = bytes[8..].to_vec();
-        let mut chunks = parseable.chunks(4);
-        let mut pchunks:Vec<Chunk> = Vec::new();
-        for c in chunks {
-            let res = Chunk::try_from(c)?;
-            pchunks.push(res);
+        let mut pos = 8;
+        let mut chunks:Vec<Chunk> = Vec::new();
+        while pos <bytes.len(){
+            let c = Chunk::try_from(&bytes[pos..])?;
+            pos += (12 + c.length() as usize);
+            chunks.push(c);
         }
         return Ok(Self{
-            chunks:pchunks
+            chunks
         })
     }
 }
@@ -64,7 +64,7 @@ mod tests {
     fn chunk_from_strings(chunk_type: &str, data: &str) -> Result<Chunk> {
         use std::str::FromStr;
 
-        let chunk_type = ChunkType::from_str(chunk_type).unwrap();
+        let chunk_type = ChunkType::from_str(chunk_type)?;
         let data: Vec<u8> = data.bytes().collect();
 
         Ok(Chunk::new(chunk_type, data))
